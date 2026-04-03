@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Let's Stand & Task Pomo</title>
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-color: #fdfbf7;
+      --surface-color: #ffffff;
+      --text-primary: #4a443a;
+      --text-secondary: #8c8477;
+      --border-color: #e8e4db;
+      --accent-color: #d4bba3;
+      --accent-hover: #e2ccb8;
+      --danger-color: #d28b8b;
+      --danger-hover: #e39d9d;
+      --success-color: #9dbf9e;
+      --shadow-sm: 0 2px 8px rgba(74, 68, 58, 0.05);
+      --shadow-md: 0 8px 24px rgba(74, 68, 58, 0.08);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-primary); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; transition: all 0.2s ease; }
+    input, select { font-family: inherit; outline: none; }
+    
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem; min-height: 100vh; display: flex; flex-direction: column; gap: 2rem; }
+    .app-header { text-align: center; position: relative; }
+    .app-header h1 { font-size: 2.25rem; font-weight: 700; color: var(--accent-color); letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .app-nav { display: inline-flex; background: var(--border-color); padding: 0.25rem; border-radius: var(--radius-sm); margin-top: 1rem; }
+    .nav-btn { padding: 0.5rem 1.5rem; border-radius: var(--radius-sm); color: var(--text-secondary); font-weight: 600; font-size: 0.95rem; }
+    .nav-btn.active { background: var(--surface-color); color: var(--accent-color); box-shadow: var(--shadow-sm); }
+    .break-banner { margin-top: 1rem; background-color: var(--success-color); color: #fff; padding: 0.75rem; border-radius: var(--radius-sm); font-weight: 500; display: inline-block; animation: slideDown 0.3s ease; }
+    .app-main { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
+    .app-main.history-main { grid-template-columns: 1fr; max-width: 700px; margin: 0 auto; width: 100%; }
+    @media (max-width: 768px) { .app-main { grid-template-columns: 1fr; } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Modal CSS */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(74, 68, 58, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
+    .modal-content { background: var(--surface-color); padding: 2rem; border-radius: var(--radius-md); box-shadow: var(--shadow-md); width: 90%; max-width: 400px; animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .modal-content h2 { margin-bottom: 1.5rem; font-size: 1.25rem; color: var(--text-primary); text-align: center; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+    .setting-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .setting-label { font-weight: 600; width: 100px; }
+    .setting-inputs { display: flex; gap: 0.5rem; }
+    .setting-inputs label { display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; color: var(--text-secondary); }
+    .setting-inputs input { width: 50px; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.25rem; text-align: center; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+    .btn-cancel, .btn-save { padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-weight: 600; }
+    .btn-cancel { color: var(--text-secondary); background: var(--bg-color); }
+    .btn-cancel:hover { background: var(--border-color); color: var(--text-primary); }
+    .btn-save { color: #fff; background: var(--accent-color); }
+    .btn-save:hover { background: var(--accent-hover); }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    /* Pomodoro CSS */
+    .pomodoro-card { background: var(--surface-color); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-md); display: flex; flex-direction: column; align-items: center; transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .pomodoro-card.is-break { background: #f4efeb; border: 1px solid var(--accent-color); }
+    .pomo-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .pomo-header h2 { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
+    .settings-btn { color: var(--text-secondary); display: flex; align-items: center; justify-content: center; padding: 0.25rem; border-radius: 50%; }
+    .settings-btn:hover { color: var(--accent-color); background: var(--bg-color); }
+    .preset-selector { display: flex; gap: 0.25rem; background: var(--bg-color); padding: 0.25rem; border-radius: var(--radius-sm); width: 100%; justify-content: space-between; margin-bottom: 2rem; }
+    .preset-btn { flex: 1; padding: 0.4rem 0.2rem; font-size: 0.8rem; border-radius: calc(var(--radius-sm) - 2px); color: var(--text-secondary); font-weight: 500; text-align: center; }
+    .preset-btn.active { background: var(--surface-color); color: var(--accent-color); box-shadow: var(--shadow-sm); }
+    .preset-btn:hover:not(.active) { color: var(--text-primary); }
+    .timer-display { position: relative; width: 240px; height: 240px; display: flex; justify-content: center; align-items: center; margin-bottom: 2rem; }
+    .progress-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+    .progress-ring circle { fill: transparent; stroke-width: 6; }
+    .ring-bg { stroke: var(--border-color); }
+    .ring-progress { stroke: var(--accent-color); stroke-dasharray: 339.292; transition: stroke-dashoffset 1s linear; stroke-linecap: round; }
+    .is-break .ring-progress { stroke: var(--success-color); }
+    .time-text { font-size: 4rem; font-weight: 300; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .stretch-card { width: 100%; background: var(--surface-color); padding: 1.5rem; border-radius: var(--radius-md); text-align: center; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .stretch-label { display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--success-color); font-weight: 600; margin-bottom: 0.5rem; }
+    .stretch-name { font-size: 1.125rem; margin-bottom: 0.5rem; }
+    .stretch-desc { font-size: 0.9375rem; color: var(--text-secondary); line-height: 1.5; }
+    .controls { display: flex; gap: 1.5rem; align-items: center; }
+    .control-btn { display: flex; justify-content: center; align-items: center; border-radius: 50%; }
+    .main-btn { width: 64px; height: 64px; background: var(--accent-color); color: #fff; box-shadow: var(--shadow-sm); }
+    .main-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+    .main-btn.pause { background: var(--danger-color); }
+    .main-btn.pause:hover { background: var(--danger-hover); }
+    .reset-btn { width: 48px; height: 48px; background: var(--bg-color); color: var(--text-secondary); }
+    .reset-btn:hover { background: var(--border-color); color: var(--text-primary); }
+
+    /* Task CSS */
+    .task-list-section { display: flex; flex-direction: column; gap: 1.5rem; }
+    .task-header { display: flex; flex-direction: column; gap: 1rem; }
+    .task-header-top { display: flex; justify-content: space-between; align-items: center; }
+    .task-header-top h2 { font-size: 1.5rem; font-weight: 600; }
+    .task-count { font-size: 0.875rem; color: var(--text-secondary); background: var(--surface-color); padding: 0.25rem 0.75rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+    
+    .filters-container { display: flex; flex-direction: column; gap: 0.75rem; }
+    .filter-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .filter-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; min-width: 40px; }
+    .filter-chip { padding: 0.25rem 0.75rem; border-radius: var(--radius-lg); font-size: 0.8rem; background: var(--bg-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .filter-chip.active { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+    .filter-chip:hover:not(.active) { background: var(--surface-color); color: var(--text-primary); }
+    
+    .add-task-form { display: flex; background: var(--surface-color); border-radius: var(--radius-md); padding: 0.5rem; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s ease; align-items: center; }
+    .add-task-form:focus-within { box-shadow: var(--shadow-md); }
+    .add-task-form input[type="text"] { flex: 1; border: none; background: transparent; padding: 0.75rem 1rem; font-size: 1rem; color: var(--text-primary); }
+    .add-task-form input::placeholder { color: var(--text-secondary); }
+    .category-select { border: none; background: transparent; color: var(--text-secondary); font-size: 0.9rem; padding: 0.5rem; cursor: pointer; border-left: 1px solid var(--border-color); margin-right: 0.5rem; }
+    
+    .add-btn { background: var(--accent-color); color: #fff; width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; justify-content: center; align-items: center; }
+    .add-btn:disabled { background: var(--border-color); cursor: not-allowed; }
+    .add-btn:not(:disabled):hover { background: var(--accent-hover); transform: scale(1.05); }
+    
+    .task-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .task-item { display: flex; align-items: center; gap: 1rem; background: var(--surface-color); padding: 1rem 1.25rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); transition: all 0.2s ease; border-left: 4px solid transparent; }
+    .task-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .task-item.running { border-left-color: var(--accent-color); background: #faf6f1; }
+    .task-item.completed { opacity: 0.7; }
+    .task-check-btn { color: var(--border-color); display: flex; align-items: center; justify-content: center; }
+    .task-check-btn:hover { color: var(--accent-color); }
+    .icon-check { color: var(--success-color); }
+    
+    .task-content { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+    .task-title-row { display: flex; align-items: center; gap: 0.5rem; }
+    .task-badge { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); white-space: nowrap; }
+    .task-badge.company { border-color: #ffdcb5; background: #fff5eb; color: #c47622; }
+    .task-badge.personal { border-color: #b5e0ff; background: #ebf6ff; color: #2d8ebf; }
+    
+    .task-title { font-size: 1rem; color: var(--text-primary); transition: color 0.2s; user-select: none; }
+    .task-item.completed .task-title { text-decoration: line-through; color: var(--text-secondary); }
+    .task-edit-input { font-size: 1rem; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.2rem 0.5rem; }
+    .task-time { font-size: 0.75rem; color: var(--text-secondary); }
+    .task-item.running .task-time { color: var(--accent-color); font-weight: 500; }
+    .task-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .task-timer-btn, .task-delete-btn { width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--text-secondary); }
+    .task-timer-btn.start:hover { color: var(--accent-color); background: var(--bg-color); }
+    .task-timer-btn.stop { color: var(--danger-color); }
+    .task-timer-btn.stop:hover { background: var(--bg-color); }
+    .task-delete-btn:hover { color: var(--danger-color); background: var(--bg-color); }
+    .empty-state { text-align: center; color: var(--text-secondary); padding: 3rem; background: var(--surface-color); border-radius: var(--radius-md); border: 1px dashed var(--border-color); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, createContext, useContext } = React;
+
+    // --- Lucide Icons Mock ---
+    const Icon = ({ path, color = "currentColor", size = 24, fill = "none" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html: path}} />
+    );
+    const Play = ({size=24}) => <Icon size={size} path='<polygon points="5 3 19 12 5 21 5 3"></polygon>' />;
+    const Pause = ({size=24}) => <Icon size={size} path='<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>' />;
+    const Square = ({size=24}) => <Icon size={size} path='<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>' />;
+    const RefreshCw = ({size=24}) => <Icon size={size} path='<polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>' />;
+    const CheckCircle = ({size=24, className=""}) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+    const Circle = ({size=24}) => <Icon size={size} path='<circle cx="12" cy="12" r="10"></circle>' />;
+    const Plus = ({size=24}) => <Icon size={size} path='<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>' />;
+    const Trash2 = ({size=24}) => <Icon size={size} path='<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>' />;
+    const SettingsIcon = ({size=24}) => <Icon size={size} path='<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' />;
+
+    // --- Utils ---
+    const formatTime = (totalSeconds) => {
+      const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+      const s = (totalSeconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    };
+    const formatDuration = (totalSeconds) => {
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      if (h > 0) return `${h}h ${m}m ${s}s`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
+    };
+
+    // --- Context Data ---
+    const TimerContext = createContext();
+    const STRETCHES = [
+      { name: '上斜方肌伸展', description: '右手輕壓左側頭部向右傾斜，感受左側頸部伸展，維持30秒後換邊。' },
+      { name: '胸大肌伸展', description: '找一面門框單手呈90度貼住，身體微轉向反方向。感受胸前方拉展。' },
+      { name: '坐姿梨狀肌伸展', description: '坐在椅子上，將右腳踝放在左膝上方，腰挺直並微向前傾。' },
+      { name: '背部與闊背肌伸展', description: '雙手交扣向前推，背部向後拱起低頭，感受背部肌肉拉伸。' },
+      { name: '頸部輕度活動', description: '下巴微收，頭部緩慢向左右兩側旋轉，放鬆頸椎壓力。' }
+    ];
+    const DEFAULT_PRESETS = [
+      { id: '1', label: '經典', work: 25, break: 5 },
+      { id: '2', label: '長時', work: 50, break: 10 },
+      { id: '3', label: '短衝', work: 15, break: 3 }
+    ];
+
+    const TimerProvider = ({ children }) => {
+      const [presets, setPresets] = useState(() => {
+        const saved = localStorage.getItem('vibeflow-presets');
+        return saved ? JSON.parse(saved) : DEFAULT_PRESETS;
+      });
+      const [activePreset, setActivePreset] = useState(presets[0]);
+      
+      const [pomoMode, setPomoMode] = useState('work');
+      const [pomoTimeLeft, setPomoTimeLeft] = useState(activePreset.work * 60);
+      const [pomoIsRunning, setPomoIsRunning] = useState(false);
+      const [currentStretch, setCurrentStretch] = useState(null);
+      
+      const [tasks, setTasks] = useState(() => {
+        const saved = localStorage.getItem('vibeflow-tasks');
+        return saved ? JSON.parse(saved) : [{ id: '1', title: '規劃今日工作', category: '個人', completed: false, timeElapsed: 0, isRunning: false }];
+      });
+      
+      const timerRef = useRef(null);
+      const lastTickRef = useRef(Date.now());
+
+      useEffect(() => {
+        localStorage.setItem('vibeflow-tasks', JSON.stringify(tasks));
+      }, [tasks]);
+
+      useEffect(() => {
+        if (pomoIsRunning || tasks.some(t => t.isRunning)) {
+          lastTickRef.current = Date.now();
+          timerRef.current = setInterval(() => {
+            const now = Date.now();
+            const delta = Math.floor((now - lastTickRef.current) / 1000);
+            if (delta > 0) {
+              lastTickRef.current = now;
+              tick(delta);
+            }
+          }, 1000);
+        } else {
+          clearInterval(timerRef.current);
+        }
+        return () => clearInterval(timerRef.current);
+      }, [pomoIsRunning, tasks, pomoMode]);
+
+      const tick = (deltaSeconds) => {
+        if (pomoIsRunning) {
+          setPomoTimeLeft(prev => {
+            if (prev - deltaSeconds <= 0) {
+              handlePomoComplete();
+              return 0;
+            }
+            return prev - deltaSeconds;
+          });
+        }
+        const isBreakActive = pomoMode === 'break' && pomoIsRunning;
+        if (!isBreakActive) {
+          setTasks(prevTasks => prevTasks.map(task => 
+            task.isRunning ? { ...task, timeElapsed: task.timeElapsed + deltaSeconds } : task
+          ));
+        }
+      };
+
+      const handlePomoComplete = () => {
+        if (pomoMode === 'work') {
+          setPomoMode('break');
+          setPomoTimeLeft(activePreset.break * 60);
+          setCurrentStretch(STRETCHES[Math.floor(Math.random() * STRETCHES.length)]);
+        } else {
+          setPomoMode('work');
+          setPomoTimeLeft(activePreset.work * 60);
+          setCurrentStretch(null);
+          setPomoIsRunning(false);
+        }
+      };
+
+      const savePresets = (newPresets) => {
+        setPresets(newPresets);
+        localStorage.setItem('vibeflow-presets', JSON.stringify(newPresets));
+        const newActive = newPresets.find(p => p.id === activePreset.id) || newPresets[0];
+        setActivePreset(newActive);
+        if (!pomoIsRunning && pomoMode === 'work') {
+          setPomoTimeLeft(newActive.work * 60);
+        }
+      };
+
+      const togglePomo = () => setPomoIsRunning(!pomoIsRunning);
+      const resetPomo = () => {
+        setPomoIsRunning(false);
+        setPomoMode('work');
+        setPomoTimeLeft(activePreset.work * 60);
+        setCurrentStretch(null);
+      };
+      const changePreset = (preset) => {
+        setActivePreset(preset);
+        setPomoIsRunning(false);
+        setPomoMode('work');
+        setPomoTimeLeft(preset.work * 60);
+        setCurrentStretch(null);
+      };
+
+      const addTask = (title, category) => {
+        if(!title.trim()) return;
+        setTasks([...tasks, { id: Date.now().toString(), title, category, completed: false, timeElapsed: 0, isRunning: false }]);
+      };
+      const removeTask = (id) => setTasks(tasks.filter(t => t.id !== id));
+      const toggleTaskComplete = (id) => setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed, isRunning: !t.completed ? false : t.isRunning } : t));
+      const toggleTaskTimer = (id) => setTasks(tasks.map(t => t.id === id ? { ...t, isRunning: !t.isRunning } : t));
+      const updateTaskTitle = (id, newTitle) => setTasks(tasks.map(t => t.id === id ? { ...t, title: newTitle } : t));
+
+      return (
+        <TimerContext.Provider value={{
+          presets, savePresets, activePreset, changePreset, 
+          pomoMode, pomoTimeLeft, pomoIsRunning, togglePomo, resetPomo, currentStretch,
+          tasks, addTask, removeTask, toggleTaskComplete, toggleTaskTimer, updateTaskTitle
+        }}>
+          {children}
+        </TimerContext.Provider>
+      );
+    };
+    const useTimer = () => useContext(TimerContext);
+
+    // --- Components ---
+    const SettingsModal = ({ onClose }) => {
+      const { presets, savePresets } = useTimer();
+      const [localPresets, setLocalPresets] = useState([...presets]);
+
+      const handleChange = (index, field, val) => {
+        const newValue = Math.max(1, parseInt(val) || 1);
+        const newP = [...localPresets];
+        newP[index] = { ...newP[index], [field]: newValue };
+        setLocalPresets(newP);
+      };
+
+      return (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>自訂番茄鐘預設</h2>
+            {localPresets.map((p, i) => (
+              <div key={p.id} className="setting-row">
+                <span className="setting-label">{p.label}模式</span>
+                <div className="setting-inputs">
+                   <label>專注 <input type="number" value={p.work} onChange={(e)=>handleChange(i, 'work', e.target.value)}/></label>
+                   <label>休息 <input type="number" value={p.break} onChange={(e)=>handleChange(i, 'break', e.target.value)}/></label>
+                </div>
+              </div>
+            ))}
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={onClose}>取消</button>
+              <button className="btn-save" onClick={() => { savePresets(localPresets); onClose(); }}>儲存變更</button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const Pomodoro = () => {
+      const { pomoMode, pomoTimeLeft, pomoIsRunning, togglePomo, resetPomo, currentStretch, activePreset, presets, changePreset } = useTimer();
+      const [showSettings, setShowSettings] = useState(false);
+      
+      const isBreak = pomoMode === 'break';
+      const totalSeconds = isBreak ? activePreset.break * 60 : activePreset.work * 60;
+      const progressPercent = ((totalSeconds - pomoTimeLeft) / totalSeconds) * 100;
+
+      return (
+        <div className={`pomodoro-card ${isBreak ? 'is-break' : ''}`}>
+          <div className="pomo-header">
+            <h2>{isBreak ? '休息時間' : '專注時間'}</h2>
+            <button className="settings-btn" onClick={() => setShowSettings(true)} title="設定番茄鐘時間"><SettingsIcon size={20}/></button>
+          </div>
+          
+          <div className="preset-selector">
+            {presets.map(preset => (
+              <button key={preset.id} className={`preset-btn ${activePreset.id === preset.id ? 'active' : ''}`} onClick={() => changePreset(preset)}>
+                {preset.label} {preset.work}/{preset.break}
+              </button>
+            ))}
+          </div>
+
+          <div className="timer-display">
+            <svg className="progress-ring" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="54" className="ring-bg" />
+              <circle cx="60" cy="60" r="54" className="ring-progress" style={{ strokeDashoffset: 339.292 * (1 - progressPercent / 100) }} />
+            </svg>
+            <div className="time-text">{formatTime(pomoTimeLeft)}</div>
+          </div>
+          {isBreak && currentStretch && (
+            <div className="stretch-card">
+              <span className="stretch-label">NASM CPT 建議伸展</span>
+              <h3 className="stretch-name">{currentStretch.name}</h3>
+              <p className="stretch-desc">{currentStretch.description}</p>
+            </div>
+          )}
+          <div className="controls">
+            <button className={`control-btn main-btn ${pomoIsRunning ? 'pause' : 'play'}`} onClick={togglePomo}>
+              {pomoIsRunning ? <Pause /> : <Play />}
+            </button>
+            <button className="control-btn reset-btn" onClick={resetPomo} title="重設計時器"><RefreshCw size={20} /></button>
+          </div>
+          
+          {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+        </div>
+      );
+    };
+
+    const TaskItem = ({ task, isHistory }) => {
+      const { toggleTaskComplete, removeTask, toggleTaskTimer, updateTaskTitle } = useTimer();
+      const [isEditing, setIsEditing] = useState(false);
+      const [editTitle, setEditTitle] = useState(task.title);
+
+      const handleBlur = () => { setIsEditing(false); if(editTitle.trim() !== task.title) updateTaskTitle(task.id, editTitle); };
+      const handleKeyDown = (e) => { if (e.key === 'Enter') handleBlur(); };
+
+      const cName = task.category || '個人';
+      const badgeClass = cName === '公司' ? 'company' : 'personal';
+
+      return (
+        <div className={`task-item ${task.completed ? 'completed' : ''} ${task.isRunning ? 'running' : ''}`}>
+          {!isHistory && (
+            <button className="task-check-btn" onClick={() => toggleTaskComplete(task.id)}>
+              {task.completed ? <CheckCircle className="icon-check" /> : <Circle />}
+            </button>
+          )}
+          {isHistory && (
+             <div className="task-check-btn"><CheckCircle className="icon-check" /></div>
+          )}
+          <div className="task-content">
+            <div className="task-title-row">
+               <span className={`task-badge ${badgeClass}`}>{cName}</span>
+               {isEditing && !isHistory ? (
+                 <input autoFocus type="text" className="task-edit-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown} />
+               ) : (
+                 <span className="task-title" onDoubleClick={() => (!task.completed && !isHistory) && setIsEditing(true)}>{task.title}</span>
+               )}
+            </div>
+            <span className="task-time">時間: {formatDuration(task.timeElapsed)} {task.isRunning && '(計時中...)'}</span>
+          </div>
+          <div className="task-actions">
+            {!task.completed && !isHistory && (
+              <button className={`task-timer-btn ${task.isRunning ? 'stop' : 'start'}`} onClick={() => toggleTaskTimer(task.id)} title={task.isRunning ? "停止計時" : "開始計時"}>
+                {task.isRunning ? <Square size={18} /> : <Play size={18} />}
+              </button>
+            )}
+            <button className="task-delete-btn" onClick={() => removeTask(task.id)} title="刪除任務"><Trash2 size={18} /></button>
+          </div>
+        </div>
+      );
+    };
+
+    const TaskList = ({ view }) => {
+      const { tasks, addTask } = useTimer();
+      const [newTaskTitle, setNewTaskTitle] = useState('');
+      const [newTaskCategory, setNewTaskCategory] = useState('個人');
+      
+      const [statusFilter, setStatusFilter] = useState('all'); // all, uncompleted, running, completed
+      const [categoryFilter, setCategoryFilter] = useState('all'); // all, company, personal
+      
+      const handleAdd = (e) => { 
+        e.preventDefault(); 
+        if (newTaskTitle.trim()) { 
+          addTask(newTaskTitle, newTaskCategory); 
+          setNewTaskTitle(''); 
+        } 
+      };
+      
+      let displayedTasks = tasks;
+      
+      // 1. Category Filter
+      if (categoryFilter !== 'all') {
+         const expectedCat = categoryFilter === 'company' ? '公司' : '個人';
+         displayedTasks = displayedTasks.filter(t => (t.category || '個人') === expectedCat);
+      }
+
+      // 2. Status/View Filter
+      if (view === 'history') {
+         displayedTasks = displayedTasks.filter(t => t.completed);
+      } else {
+         if (statusFilter === 'uncompleted') displayedTasks = displayedTasks.filter(t => !t.completed);
+         if (statusFilter === 'completed') displayedTasks = displayedTasks.filter(t => t.completed);
+         if (statusFilter === 'running') displayedTasks = displayedTasks.filter(t => t.isRunning);
+      }
+
+      return (
+        <div className="task-list-section">
+          {view === 'history' ? (
+             <div className="task-header">
+                <div className="task-header-top">
+                  <h2>完成紀錄快照</h2>
+                  <span className="task-count">共 {displayedTasks.length} 個已完成項目</span>
+                </div>
+                <div className="filters-container">
+                  <div className="filter-row">
+                    <span className="filter-label">分類</span>
+                    <button className={`filter-chip ${categoryFilter==='all' ? 'active':''}`} onClick={()=>setCategoryFilter('all')}>全部</button>
+                    <button className={`filter-chip ${categoryFilter==='company' ? 'active':''}`} onClick={()=>setCategoryFilter('company')}>公司</button>
+                    <button className={`filter-chip ${categoryFilter==='personal' ? 'active':''}`} onClick={()=>setCategoryFilter('personal')}>個人</button>
+                  </div>
+                </div>
+             </div>
+          ) : (
+            <div className="task-header">
+              <div className="task-header-top">
+                <h2>代辦事項</h2>
+                <span className="task-count">{tasks.filter(t => t.completed).length} / {tasks.length}</span>
+              </div>
+              <div className="filters-container">
+                <div className="filter-row">
+                  <span className="filter-label">狀態</span>
+                  <button className={`filter-chip ${statusFilter==='all' ? 'active':''}`} onClick={()=>setStatusFilter('all')}>全部</button>
+                  <button className={`filter-chip ${statusFilter==='uncompleted' ? 'active':''}`} onClick={()=>setStatusFilter('uncompleted')}>未完成</button>
+                  <button className={`filter-chip ${statusFilter==='running' ? 'active':''}`} onClick={()=>setStatusFilter('running')}>執行中</button>
+                  <button className={`filter-chip ${statusFilter==='completed' ? 'active':''}`} onClick={()=>setStatusFilter('completed')}>已完成</button>
+                </div>
+                <div className="filter-row">
+                  <span className="filter-label">分類</span>
+                  <button className={`filter-chip ${categoryFilter==='all' ? 'active':''}`} onClick={()=>setCategoryFilter('all')}>全部</button>
+                  <button className={`filter-chip ${categoryFilter==='company' ? 'active':''}`} onClick={()=>setCategoryFilter('company')}>公司</button>
+                  <button className={`filter-chip ${categoryFilter==='personal' ? 'active':''}`} onClick={()=>setCategoryFilter('personal')}>個人</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view === 'main' && (
+            <form className="add-task-form" onSubmit={handleAdd}>
+              <input type="text" placeholder="新增任務..." value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} />
+              <select className="category-select" value={newTaskCategory} onChange={(e)=>setNewTaskCategory(e.target.value)}>
+                <option value="個人">個人</option>
+                <option value="公司">公司</option>
+              </select>
+              <button type="submit" className="add-btn" disabled={!newTaskTitle.trim()}><Plus size={20} /></button>
+            </form>
+          )}
+
+          <div className="task-list">
+            {displayedTasks.length > 0 ? (
+              displayedTasks.map(task => <TaskItem key={task.id} task={task} isHistory={view === 'history'} />)
+            ) : (
+              <div className="empty-state">
+                {view === 'history' ? '目前還沒有符合分類的完成紀錄喔！' : '目前沒有符合過濾條件的任務'}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const App = () => {
+      const { pomoMode, pomoIsRunning } = useTimer();
+      const [activeTab, setActiveTab] = useState('main'); // main, history
+      
+      const isBreakActive = pomoMode === 'break' && pomoIsRunning;
+      
+      return (
+        <div className="container">
+          <header className="app-header">
+            <h1>Let's Stand & Task Pomo</h1>
+            <div className="app-nav">
+               <button className={`nav-btn ${activeTab==='main'?'active':''}`} onClick={()=>setActiveTab('main')}>目前任務</button>
+               <button className={`nav-btn ${activeTab==='history'?'active':''}`} onClick={()=>setActiveTab('history')}>完成紀錄</button>
+            </div>
+            {isBreakActive && <div className="break-banner">現正休息中，所有任務已自動暫停計時</div>}
+          </header>
+          
+          {activeTab === 'main' ? (
+            <main className="app-main">
+              <div className="sidebar"><Pomodoro /></div>
+              <div className="content"><TaskList view="main" /></div>
+            </main>
+          ) : (
+            <main className="app-main history-main">
+              <div className="content"><TaskList view="history" /></div>
+            </main>
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<TimerProvider><App /></TimerProvider>);
+  </script>
+</body>
+</html>

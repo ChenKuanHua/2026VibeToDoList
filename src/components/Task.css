@@ -1,0 +1,185 @@
+.task-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.task-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  background: var(--surface-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.add-task-form {
+  display: flex;
+  background: var(--surface-color);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+.add-task-form:focus-within {
+  box-shadow: var(--shadow-md);
+}
+
+.add-task-form input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.add-task-form input::placeholder {
+  color: var(--text-secondary);
+}
+
+.add-btn {
+  background: var(--accent-color);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.add-btn:disabled {
+  background: var(--border-color);
+  cursor: not-allowed;
+}
+
+.add-btn:not(:disabled):hover {
+  background: var(--accent-hover);
+  transform: scale(1.05);
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface-color);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.task-item.running {
+  border-left-color: var(--accent-color);
+  background: #faf6f1;
+}
+
+.task-item.completed {
+  opacity: 0.7;
+}
+
+.task-check-btn {
+  color: var(--border-color);
+}
+
+.task-check-btn:hover {
+  color: var(--accent-color);
+}
+
+.icon-check {
+  color: var(--success-color);
+}
+
+.task-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.task-title {
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: color 0.2s;
+}
+
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.task-edit-input {
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+}
+
+.task-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.task-item.running .task-time {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.task-timer-btn, .task-delete-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+.task-timer-btn.start:hover {
+  color: var(--accent-color);
+  background: var(--bg-color);
+}
+
+.task-timer-btn.stop {
+  color: var(--danger-color);
+}
+
+.task-timer-btn.stop:hover {
+  background: var(--bg-color);
+}
+
+.task-delete-btn:hover {
+  color: var(--danger-color);
+  background: var(--bg-color);
+}
