@@ -11,7 +11,10 @@ function App() {
   return (
     <div className="container">
       <header className="app-header">
-        <h1>Vibe Flow</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+          <img src="/logo.svg" alt="Logo" style={{ width: '42px', height: '42px' }} />
+          <h1 style={{ margin: 0 }}>Vibe Flow</h1>
+        </div>
         <p className="app-subtitle">極簡辦公工具包</p>
         {isBreakActive && (
           <div className="break-banner">

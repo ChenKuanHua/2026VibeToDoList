@@ -1,5 +1,9 @@
 # 2026VibeToDoList (Let's Stand & Task Pomo)
 
+<div align="center">
+  <img src="./logo.svg" alt="Logo" width="150" />
+</div>
+
 一款結合了「番茄鐘 (Pomodoro)」與「代辦事項 (To-Do List)」的極簡風辦公工具包。專為長時間久坐的辦公人士設計，強調簡約的清新美學，並且在番茄鐘休息時會隨機推送符合 **NASM CPT** 標準的伸展提示。
 
 ## 🌟 核心特色
@@ -10,6 +14,11 @@
 - **NASM CPT 伸展提示**：休息時隨機抽取如「坐姿梨狀肌伸展」、「胸大肌伸展」等有效放鬆動作。
 
 ## 🚀 技術架構與開發過程
+
+<div align="center">
+  <img src="./projectFlow.svg" alt="專案架構流程圖" width="800" />
+</div>
+
 本專案採用 **React + Vanilla CSS** 的單一架構 (Standalone HTML) 進行快速構建。
 不需要複雜的 Node.js 環境設定，所有 React 代碼、樣式及圖示都巧妙地封裝在了單一個 `index.html` 當中，可直接透過瀏覽器開啟或部署至任何靜態伺服器！
 

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Let's Stand & Task Pomo</title>
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
   <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -551,7 +552,10 @@
       return (
         <div className="container">
           <header className="app-header">
-            <h1>Let's Stand & Task Pomo</h1>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <img src="./logo.svg" alt="Logo" style={{ width: '42px', height: '42px' }} />
+              <h1 style={{ marginBottom: 0 }}>Let's Stand & Task Pomo</h1>
+            </div>
             <div className="app-nav">
                <button className={`nav-btn ${activeTab==='main'?'active':''}`} onClick={()=>setActiveTab('main')}>目前任務</button>
                <button className={`nav-btn ${activeTab==='history'?'active':''}`} onClick={()=>setActiveTab('history')}>完成紀錄</button>
