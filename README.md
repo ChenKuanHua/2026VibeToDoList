@@ -32,35 +32,35 @@ graph TD
     classDef local fill:#98FB98,stroke:#006400,stroke-width:2px;
     classDef logic fill:#E6E6FA,stroke:#4b0082,stroke-width:2px;
 
-    User([使用者 User]):::user -->|打開網頁或操作任務| UI[VibeToDoList 原生 JS 前端介面]:::logic
+    User(["使用者 User"]):::user -->|打開網頁或操作任務| UI["VibeToDoList 原生 JS 前端介面"]:::logic
     
     subgraph Authentication [1. Google 權限驗證樞紐]
-        GIS[Google Identity Services 快顯登入]
-        OAuth[OAuth 2.0 取得存取 Token]
+        GIS["Google Identity Services 快顯登入"]
+        OAuth["OAuth 2.0 取得存取 Token"]
     end
 
     subgraph DataStorage [2. 雙軌資料儲存與狀態管理]
-        LocalStorage[(瀏覽器 Local Storage)]:::local
-        RAM([前端 DOM 渲染核心]):::logic
-        GoogleSheet[(個人專屬 Google Sheet)]:::cloud
+        LocalStorage[("瀏覽器 Local Storage")]:::local
+        RAM(["前端 DOM 渲染核心"]):::logic
+        GoogleSheet[("個人專屬 Google Sheet")]:::cloud
     end
 
     UI -->|點擊登入授權| GIS
     GIS -->|發放| OAuth
     
-    UI -->|每次動作 (新增/完成/計時)| StateCheck{是否已登入?}:::logic
+    UI -->|"每次動作 (新增/完成/計時)"| StateCheck{"是否已登入?"}:::logic
     
     StateCheck -->|否: 存入本地| LocalStorage
     StateCheck -->|是: 啟動防暴衝機制| OAuth
 
-    OAuth -->|驗證最高隱私 scopes| SheetAPI[Google Drive / Sheets API]:::cloud
+    OAuth -->|驗證最高隱私 scopes| SheetAPI["Google Drive / Sheets API"]:::cloud
     
     SheetAPI -.->|尋找或自動建立| GoogleSheet
     
     GoogleSheet -.->|讀取並覆寫| RAM
     LocalStorage -.->|離線加載| RAM
     
-    RAM -->|響應式更新| View[艾森豪矩陣 / 列表 雙視圖]
+    RAM -->|響應式更新| View["艾森豪矩陣 / 列表 雙視圖"]
 ```
 
 ### 開發疊代與架構亮點
