@@ -28,7 +28,16 @@ export const TimerProvider = ({ children }) => {
 
   // --- Task State ---
   const [tasks, setTasks] = useState([
-    { id: '1', title: '規劃今日工作', completed: false, timeElapsed: 0, isRunning: false }
+    { 
+      id: '1', 
+      title: '規劃今日工作', 
+      completed: false, 
+      timeElapsed: 0, 
+      isRunning: false,
+      dueDate: new Date().toISOString().split('T')[0],
+      isImportant: true,
+      isUrgent: true
+    }
   ]);
 
   const timerRef = useRef(null);
@@ -113,9 +122,18 @@ export const TimerProvider = ({ children }) => {
   };
 
   // --- Task Actions ---
-  const addTask = (title) => {
+  const addTask = (title, dueDate = '', isImportant = false, isUrgent = false) => {
     if(!title.trim()) return;
-    setTasks([...tasks, { id: Date.now().toString(), title, completed: false, timeElapsed: 0, isRunning: false }]);
+    setTasks([...tasks, { 
+      id: Date.now().toString(), 
+      title, 
+      completed: false, 
+      timeElapsed: 0, 
+      isRunning: false,
+      dueDate,
+      isImportant,
+      isUrgent
+    }]);
   };
 
   const removeTask = (id) => {
@@ -145,12 +163,16 @@ export const TimerProvider = ({ children }) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, title: newTitle } : t));
   };
 
+  const updateTaskProperties = (id, updates) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
   return (
     <TimerContext.Provider value={{
       presets: PRESETS,
       activePreset, changePreset,
       pomoMode, pomoTimeLeft, pomoIsRunning, togglePomo, resetPomo, currentStretch,
-      tasks, addTask, removeTask, toggleTaskComplete, toggleTaskTimer, updateTaskTitle
+      tasks, addTask, removeTask, toggleTaskComplete, toggleTaskTimer, updateTaskTitle, updateTaskProperties
     }}>
       {children}
     </TimerContext.Provider>
