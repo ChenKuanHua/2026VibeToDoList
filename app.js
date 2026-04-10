@@ -40,8 +40,9 @@ let pomoTimeLeft = activePreset.work * 60;
 let pomoIsRunning = false;
 let currentStretch = null;
 
-let tasks = [
-  { 
+let tasks = JSON.parse(localStorage.getItem('vibeTasks'));
+if (!tasks || tasks.length === 0) {
+  tasks = [{ 
     id: Date.now().toString(), 
     title: '規劃今日工作', 
     completed: false, 
@@ -50,9 +51,8 @@ let tasks = [
     dueDate: new Date().toISOString().split('T')[0],
     isImportant: true,
     isUrgent: true
-  }
-];
-
+  }];
+}
 let viewMode = 'list';
 let timerInterval = null;
 let lastTickTime = Date.now();
@@ -192,6 +192,7 @@ function handlePomoComplete() {
     currentStretch = null;
     pomoIsRunning = false;
   }
+  if (typeof saveAndSyncTasks === "function") saveAndSyncTasks();
 }
 
 function togglePomo() {
@@ -244,6 +245,7 @@ function addTask(e) {
   
   addBtn.disabled = true;
   render();
+  if (typeof saveAndSyncTasks === "function") saveAndSyncTasks();
 }
 
 newTaskTitle.addEventListener('input', () => {
@@ -253,17 +255,21 @@ newTaskTitle.addEventListener('input', () => {
 function removeTask(id) {
   tasks = tasks.filter(t => t.id !== id);
   render();
+  if (typeof saveAndSyncTasks === "function") saveAndSyncTasks();
 }
 
 function toggleTaskComplete(id) {
   tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed, isRunning: !t.completed ? false : t.isRunning } : t);
   render();
+  if (typeof saveAndSyncTasks === "function") saveAndSyncTasks();
 }
 
 function toggleTaskTimer(id) {
   tasks = tasks.map(t => t.id === id ? { ...t, isRunning: !t.isRunning } : t);
   if (tasks.some(t => t.isRunning) && !timerInterval) startTimerLoop();
   render();
+  // Sync to save the final accumulated time when stopped
+  if (typeof saveAndSyncTasks === "function") saveAndSyncTasks();
 }
 
 let editingTaskId = null;
@@ -301,7 +307,7 @@ function renderTaskItem(task, isMatrix = false) {
     }, 0);
   } else {
     // Badges depending on view type
-    let badges = `<span id="time-badge-${task.id}" class="badge badge-plain">${formatDuration(task.timeElapsed)} ${task.isRunning ? '⏳' : ''}</span>`;
+    let badges = `<span id="time-badge-${task.id}" class="badge badge-plain">${formatDuration(task.timeElapsed)} ${task.isRunning ? '<i data-lucide="timer" style="width:12px; height:12px;"></i>' : ''}</span>`;
     if (task.dueDate) badges += `<span class="badge badge-date"><i data-lucide="calendar" style="width:12px; height:12px;"></i> ${task.dueDate}</span>`;
     
     // Omit urgent and important badge if checking Matrix since Matrix already implies priority
@@ -356,6 +362,7 @@ window.saveTaskEdit = (id) => {
   } : t);
   editingTaskId = null;
   render();
+  if (typeof saveAndSyncTasks === "function") saveAndSyncTasks();
 };
 
 window.changePresetObj = (label) => {
@@ -374,7 +381,7 @@ function updateTimesOnly() {
   tasks.forEach(t => {
       const badge = document.getElementById(`time-badge-${t.id}`);
       if (badge) {
-          badge.innerHTML = `${formatDuration(t.timeElapsed)} ${t.isRunning ? '⏳' : ''}`;
+          badge.innerHTML = `${formatDuration(t.timeElapsed)} ${t.isRunning ? '<i data-lucide="timer" style="width:12px; height:12px;"></i>' : ''}`;
       }
   });
 }
@@ -455,4 +462,269 @@ viewMatrixBtn.addEventListener('click', () => { viewMode = 'matrix'; render(); }
 document.addEventListener("DOMContentLoaded", () => {
     themeToggleBtn.innerHTML = `<i data-lucide="${currentTheme === 'light' ? 'moon' : 'sun'}"></i>`;
     setTimeout(render, 100);
+    checkGoogleLibs();
 });
+
+// --- Info Modal Logic ---
+const infoModalBtn = document.getElementById('info-modal-btn');
+const infoModal = document.getElementById('info-modal');
+const infoCloseBtn = document.getElementById('info-close-btn');
+
+infoModalBtn.addEventListener('click', () => { infoModal.style.display = 'flex'; });
+infoCloseBtn.addEventListener('click', () => { infoModal.style.display = 'none'; });
+infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.style.display = 'none'; });
+
+// --- Google Sheets Integration ---
+const CLIENT_ID = '669986671313-2rtplhamuknheg6etvq8iot92s5kkm3k.apps.googleusercontent.com';
+const API_KEY = 'AIzaSyCTGJJuUlOY-fCWngXnGTjoqqmPiCCCgfU';
+const DISCOVERY_DOCS = [
+  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+  'https://sheets.googleapis.com/$discovery/rest?version=v4'
+];
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+let isAuthenticated = false;
+let userSpreadsheetId = null;
+let currentUserName = '';
+
+const authBtn = document.getElementById('auth-btn');
+const userGreeting = document.getElementById('user-greeting');
+const syncBanner = document.getElementById('sync-status-banner');
+const syncText = document.getElementById('sync-status-text');
+const syncIcon = document.getElementById('sync-status-icon');
+const sheetLinkBtn = document.getElementById('sheet-link');
+
+function saveAndSyncTasks() {
+  if (isAuthenticated && typeof syncToGoogleSheets === "function") {
+    syncToGoogleSheets();
+  } else {
+    localStorage.setItem('vibeTasks', JSON.stringify(tasks));
+  }
+}
+
+function setSyncStatus(status, isLoading = false) {
+  if(syncBanner) {
+    syncBanner.style.display = status ? 'flex' : 'none';
+    if (status) {
+      if(syncText) syncText.innerText = status;
+      if(syncIcon) syncIcon.style.display = isLoading ? 'inline-block' : 'none';
+    }
+  }
+}
+
+function updateAuthUI() {
+  if (isAuthenticated) {
+    authBtn.innerHTML = '<i data-lucide="log-out" style="width:16px;height:16px;"></i> 登出';
+    authBtn.classList.add('auth-logout');
+    userGreeting.innerHTML = `嗨! ${currentUserName}`;
+    userGreeting.style.display = 'block';
+  } else {
+    authBtn.innerHTML = 'Google 登入';
+    authBtn.classList.remove('auth-logout');
+    userGreeting.style.display = 'none';
+    if(syncBanner) syncBanner.style.display = 'none';
+    if(sheetLinkBtn) sheetLinkBtn.style.display = 'none';
+    userSpreadsheetId = null;
+    currentUserName = '';
+    // Show placeholder task if logged out? For now leave as is.
+  }
+  lucide.createIcons();
+}
+
+async function initializeGapiClient() {
+  try {
+    await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
+    gapiInited = true;
+    enableAuthBtn();
+  } catch (e) {
+    console.error('Error init GAPI', e);
+  }
+}
+
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error !== undefined) {
+        throw (resp);
+      }
+      try {
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+             headers: { Authorization: `Bearer ${resp.access_token}` }
+        }).then(r => r.json());
+        currentUserName = userInfo.given_name || userInfo.name || 'User';
+      } catch(e) { console.log(e); }
+
+      isAuthenticated = true;
+      updateAuthUI();
+      await initDataSync();
+    },
+  });
+  gisInited = true;
+  enableAuthBtn();
+}
+
+function enableAuthBtn() {
+  if (gapiInited && gisInited) {
+    authBtn.disabled = false;
+  }
+}
+
+authBtn.addEventListener('click', () => {
+  if (isAuthenticated) {
+    // Logout
+    const token = gapi.client.getToken();
+    if (token && token.access_token) {
+      // Perform logout instantly in UI
+      gapi.client.setToken('');
+      isAuthenticated = false;
+      updateAuthUI();
+      handleLogoutAction();
+      
+      // Revoke in background
+      google.accounts.oauth2.revoke(token.access_token, () => {});
+    } else {
+        isAuthenticated = false;
+        updateAuthUI();
+        handleLogoutAction();
+    }
+  } else {
+    // Login
+
+    tokenClient.requestAccessToken({prompt: 'consent'});
+  }
+});
+
+function handleLogoutAction() {
+  // Revert back to local storage
+  tasks = JSON.parse(localStorage.getItem('vibeTasks'));
+  if (!tasks || tasks.length === 0) tasks = [];
+  render();
+  setTimeout(() => {
+    infoModal.style.display = 'flex';
+  }, 300);
+}
+
+function checkGoogleLibs() {
+  if (window.gapi && window.google) {
+      window.gapi.load('client', initializeGapiClient);
+      gisLoaded();
+  } else {
+      setTimeout(checkGoogleLibs, 100);
+  }
+}
+
+async function initDataSync() {
+  setSyncStatus('正在為您尋找/建構 Google 試算表...', true);
+  try {
+    let response = await gapi.client.drive.files.list({
+      q: "name='VibeToDoList' and trashed=false",
+      fields: 'files(id, name)',
+      spaces: 'drive'
+    });
+    
+    let files = response.result.files;
+    if (files && files.length > 0) {
+      userSpreadsheetId = files[0].id;
+    } else {
+      setSyncStatus('建立新的試算表中...', true);
+      const createResponse = await gapi.client.sheets.spreadsheets.create({
+        resource: {
+          properties: { title: 'VibeToDoList' },
+          sheets: [{ properties: { title: 'Tasks' } }]
+        }
+      });
+      userSpreadsheetId = createResponse.result.spreadsheetId;
+      
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: userSpreadsheetId,
+        range: 'Tasks!A1:G1',
+        valueInputOption: 'RAW',
+        resource: { values: [['ID', '任務名稱', '完成狀態', '累積專注時間', '截止日期', '重要', '緊急']] }
+      });
+    }
+
+    setSyncStatus('正在同步您的待辦事項...', true);
+    await fetchTasksFromSheet();
+    setSyncStatus('已連接至您的 VibeToDoList 試算表囉!');
+    if(sheetLinkBtn) {
+      sheetLinkBtn.href = `https://docs.google.com/spreadsheets/d/${userSpreadsheetId}/edit`;
+      sheetLinkBtn.style.display = 'inline-flex';
+    }
+    setTimeout(() => { setSyncStatus(''); }, 5000);
+  } catch (err) {
+    console.error(err);
+    setSyncStatus('同步失敗！請檢查網路。');
+    setTimeout(() => { setSyncStatus(''); }, 5000);
+  }
+}
+
+async function fetchTasksFromSheet() {
+  if (!userSpreadsheetId) return;
+  try {
+    let response = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: userSpreadsheetId,
+      range: 'Tasks!A2:G'
+    });
+    const rows = response.result.values || [];
+    
+    // Convert to Tasks array.
+    if (rows.length > 0) {
+        tasks = rows.map(row => ({
+        id: row[0] || Date.now().toString() + Math.random(),
+        title: row[1] || '未命名任務',
+        completed: row[2] === 'TRUE',
+        timeElapsed: parseInt(row[3]) || 0,
+        dueDate: row[4] || '',
+        isImportant: row[5] === 'TRUE',
+        isUrgent: row[6] === 'TRUE',
+        isRunning: false
+        }));
+    } else {
+        tasks = [];
+    }
+    render();
+  } catch (err) {
+    console.error('Error fetching tasks', err);
+  }
+}
+
+let syncTimeout = null;
+async function syncToGoogleSheets() {
+  if (!userSpreadsheetId || !isAuthenticated) return;
+  setSyncStatus('正在同步...', true);
+  
+  if (syncTimeout) clearTimeout(syncTimeout);
+  
+  syncTimeout = setTimeout(async () => {
+    try {
+      await gapi.client.sheets.spreadsheets.values.clear({
+        spreadsheetId: userSpreadsheetId,
+        range: 'Tasks!A2:G'
+      });
+      
+      const values = tasks.map(t => [
+        t.id, t.title, t.completed ? 'TRUE' : 'FALSE', t.timeElapsed.toString(), t.dueDate, t.isImportant ? 'TRUE' : 'FALSE', t.isUrgent ? 'TRUE' : 'FALSE'
+      ]);
+      
+      if (values.length > 0) {
+        await gapi.client.sheets.spreadsheets.values.update({
+          spreadsheetId: userSpreadsheetId,
+          range: 'Tasks!A2:G',
+          valueInputOption: 'RAW',
+          resource: { values }
+        });
+      }
+      setSyncStatus('已同步');
+      setTimeout(() => { if(document.getElementById('sync-status-text') && document.getElementById('sync-status-text').innerText === '已同步') setSyncStatus(''); }, 2000);
+    } catch(e) {
+      console.error('Update err', e);
+      setSyncStatus('同步失敗');
+    }
+  }, 1000);
+}
+

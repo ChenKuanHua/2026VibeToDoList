@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,20 +8,39 @@
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="app.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js"></script>
 </head>
+
 <body data-theme="light">
   <div class="container">
     <header class="app-header">
       <div class="header-left">
         <img src="logo.svg" alt="Logo" />
         <div>
-           <h1>Vibe Flow</h1>
+          <h1>Vibe ToDos</h1>
         </div>
+        <button id="info-modal-btn" class="info-btn" title="使用指南與隱私說明">
+          <i data-lucide="info"></i>
+        </button>
       </div>
-      <button id="theme-toggle" class="theme-toggle" title="切換深淺模式">
-        <i data-lucide="moon"></i>
-      </button>
+      <div class="header-right">
+        <div id="auth-section" class="auth-section">
+          <div id="user-greeting" class="user-greeting" style="display:none;"></div>
+          <button id="auth-btn" class="auth-btn auth-login">Google 登入</button>
+        </div>
+        <button id="theme-toggle" class="theme-toggle" title="切換深淺模式">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
     </header>
+
+    <div id="sync-status-banner" class="sync-status-banner" style="display: none;">
+      <i data-lucide="loader-2" class="spin-icon" id="sync-status-icon"></i>
+      <span id="sync-status-text">正在同步...</span>
+      <a href="#" id="sheet-link" target="_blank" class="sheet-link-btn" style="display:none;" title="開啟您的試算表"><i
+          data-lucide="external-link" style="width:14px;height:14px;"></i></a>
+    </div>
 
     <div class="sticky-pomodoro-wrapper">
       <div id="pomodoro-bar" class="pomodoro-bar">
@@ -32,7 +52,7 @@
               <span id="time-text" class="time-text">25:00</span>
             </div>
           </div>
-          
+
           <div class="pomo-controls">
             <button id="pomo-toggle-btn" class="btn-icon play-btn" title="開始計時">
               <i data-lucide="play" style="width:20px;height:20px;"></i>
@@ -43,7 +63,7 @@
           </div>
 
           <div class="pomo-presets" id="preset-selector">
-             <!-- Preset buttons dynamically injected -->
+            <!-- Preset buttons dynamically injected -->
           </div>
         </div>
       </div>
@@ -51,7 +71,8 @@
         <h3>NASM CPT 建議伸展: <span id="stretch-name"></span></h3>
         <p id="stretch-desc"></p>
       </div>
-      <div id="break-banner" class="stretch-banner" style="display: none; border-left-color: var(--accent-color); background: rgba(140, 122, 107, 0.15);">
+      <div id="break-banner" class="stretch-banner"
+        style="display: none; border-left-color: var(--accent-color); background: rgba(140, 122, 107, 0.15);">
         <h3 style="color: var(--accent-color);">現正休息中</h3>
         <p>所有任務已自動暫停計時</p>
       </div>
@@ -107,26 +128,61 @@
           </div>
           <div id="task-matrix-view" class="matrix-container" style="display: none;">
             <div class="matrix-quadrant q1">
-              <h3 class="quadrant-title alert-red">🔥 重要且緊急</h3>
+              <h3 class="quadrant-title alert-red"><i data-lucide="flame" style="width:16px; height:16px;"></i> 重要且緊急
+              </h3>
               <div id="q1-tasks" class="quadrant-tasks"></div>
             </div>
             <div class="matrix-quadrant q2">
-              <h3 class="quadrant-title alert-blue">⭐ 重要但不緊急</h3>
+              <h3 class="quadrant-title alert-blue"><i data-lucide="star" style="width:16px; height:16px;"></i> 重要但不緊急
+              </h3>
               <div id="q2-tasks" class="quadrant-tasks"></div>
             </div>
             <div class="matrix-quadrant q3">
-              <h3 class="quadrant-title alert-orange">⏰ 不重要但緊急</h3>
+              <h3 class="quadrant-title alert-orange"><i data-lucide="clock" style="width:16px; height:16px;"></i>
+                不重要但緊急</h3>
               <div id="q3-tasks" class="quadrant-tasks"></div>
             </div>
             <div class="matrix-quadrant q4">
-              <h3 class="quadrant-title alert-gray">🍵 不重要且不緊急</h3>
+              <h3 class="quadrant-title alert-gray"><i data-lucide="coffee" style="width:16px; height:16px;"></i>
+                不重要且不緊急</h3>
               <div id="q4-tasks" class="quadrant-tasks"></div>
             </div>
           </div>
         </div>
       </div>
     </main>
+
+    <footer class="app-footer">
+      <div class="footer-content">
+        <span class="version-text">v1.0.0</span>
+        <span class="made-with">
+          Made with <i data-lucide="heart" class="footer-icon"></i> by
+          <a href="https://github.com/ChenKuanHua" target="_blank" class="footer-link"><i data-lucide="code"
+              class="footer-icon"></i> ChenKuanHua</a>
+          &
+          <a href="#" target="_blank" class="footer-link"><i data-lucide="bot" class="footer-icon"></i> Antigravity</a>
+        </span>
+      </div>
+    </footer>
   </div>
-  <script src="app.js"></script>
+
+  <!-- Info Modal -->
+  <div id="info-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2>使用指南與隱私說明</h2>
+      <ul class="modal-list">
+        <li>本站支援<strong>兩種資料儲存方式</strong>，皆保障您的閱讀隱私：</li>
+        <li><strong>【訪客自動存取】</strong>未登入時，您的資料將自動儲存於此裝置的瀏覽器 (Local Storage) 中，若清除快取將隨之遺失。</li>
+        <li><strong>【跨平台雲端同步】</strong>點擊 Google 登入後，將自動連結並創建專屬於您的 <strong class="alert-text">VibeToDoList</strong>
+          試算表（於您的 Google Drive）。跨設備皆可無縫讀取與寫入此單一檔案。</li>
+        <li><strong>注意事項：</strong>請勿刪除、更改試算表名稱或搬移至共用空間，以免系統無法讀取導致資料不全或誤建新檔案。</li>
+        <li><strong>基於安全性及隱私，本站僅會寫入/讀取您授權的單一試算表，請放心使用。</strong></li>
+      </ul>
+      <button id="info-close-btn" class="primary-btn">我知道了</button>
+    </div>
+  </div>
+
+  <script src="app.js?v=2"></script>
 </body>
+
 </html>

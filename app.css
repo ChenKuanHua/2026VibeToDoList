@@ -938,3 +938,230 @@ input {
   width: 28px;
   height: 28px;
 }
+
+/* =========================================
+   Google Auth, Status Banner & Footer
+   ========================================= */
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-greeting {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.auth-btn {
+  background: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.auth-btn:hover {
+  background: var(--bg-color);
+  transform: translateY(-1px);
+}
+
+.auth-btn.auth-logout:hover {
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.info-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.info-btn:hover {
+  color: var(--accent-color);
+  background: rgba(128, 128, 128, 0.1);
+}
+
+.sync-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.sheet-link-btn {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-color);
+  background: rgba(128, 128, 128, 0.1);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+  transition: all 0.2s;
+}
+
+.sheet-link-btn:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+/* =========================================
+   Modal Styles
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.modal-content h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.modal-list {
+  padding-left: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-list li {
+  line-height: 1.5;
+}
+
+.alert-text {
+  color: var(--danger-color);
+}
+
+.primary-btn {
+  background: var(--text-primary);
+  color: var(--surface-color);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  align-self: flex-end;
+  transition: all 0.2s;
+}
+
+.primary-btn:hover {
+  background: var(--accent-color);
+}
+
+/* =========================================
+   Footer Styles
+   ========================================= */
+.app-footer {
+  margin-top: auto;
+  padding: 2rem 0 1rem 0;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.made-with {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.footer-link {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--accent-color);
+}
+
+/* Header right adjustments */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .header-right {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+}
