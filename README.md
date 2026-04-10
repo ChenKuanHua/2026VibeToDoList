@@ -41,7 +41,7 @@ graph TD
 
     subgraph DataStorage [2. 雙軌資料儲存與狀態管理]
         LocalStorage[(瀏覽器 Local Storage)]:::local
-        RAM[{前端 DOM 渲染核心}]:::logic
+        RAM([前端 DOM 渲染核心]):::logic
         GoogleSheet[(個人專屬 Google Sheet)]:::cloud
     end
 
@@ -55,7 +55,7 @@ graph TD
 
     OAuth -->|驗證最高隱私 scopes| SheetAPI[Google Drive / Sheets API]:::cloud
     
-    SheetAPI -.尋找或自動建立.-> GoogleSheet
+    SheetAPI -.->|尋找或自動建立| GoogleSheet
     
     GoogleSheet -.->|讀取並覆寫| RAM
     LocalStorage -.->|離線加載| RAM
