@@ -27,10 +27,10 @@
 
 ```mermaid
 graph TD
-    classDef user fill:#FFDAB9,stroke:#e65c00,stroke-width:2px;
-    classDef cloud fill:#ADD8E6,stroke:#00509e,stroke-width:2px;
-    classDef local fill:#98FB98,stroke:#006400,stroke-width:2px;
-    classDef logic fill:#E6E6FA,stroke:#4b0082,stroke-width:2px;
+    classDef user fill:#FFDAB9,stroke:#e65c00,stroke-width:2px,color:#000;
+    classDef cloud fill:#ADD8E6,stroke:#00509e,stroke-width:2px,color:#000;
+    classDef local fill:#98FB98,stroke:#006400,stroke-width:2px,color:#000;
+    classDef logic fill:#E6E6FA,stroke:#4b0082,stroke-width:2px,color:#000;
 
     User(["使用者 User"]):::user -->|打開網頁或操作任務| UI["VibeToDoList 原生 JS 前端介面"]:::logic
     
