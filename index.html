@@ -5,9 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vibe Flow</title>
   <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
+<body data-theme="light">
+  <div class="container">
+    <header class="app-header">
+      <div class="header-left">
+        <img src="logo.svg" alt="Logo" />
+        <div>
+           <h1>Vibe Flow</h1>
+        </div>
+      </div>
+      <button id="theme-toggle" class="theme-toggle" title="切換深淺模式">
+        <i data-lucide="moon"></i>
+      </button>
+    </header>
+
+    <div class="sticky-pomodoro-wrapper">
+      <div id="pomodoro-bar" class="pomodoro-bar">
+        <div id="pomo-progress-bg" class="pomo-progress-bg"></div>
+        <div class="pomo-content-layer">
+          <div class="pomo-left">
+            <div class="pomo-status">
+              <span id="pomo-title" class="pomo-title">專注時間</span>
+              <span id="time-text" class="time-text">25:00</span>
+            </div>
+          </div>
+          
+          <div class="pomo-controls">
+            <button id="pomo-toggle-btn" class="btn-icon play-btn" title="開始計時">
+              <i data-lucide="play" style="width:20px;height:20px;"></i>
+            </button>
+            <button id="pomo-reset-btn" class="btn-icon" title="重置計時">
+              <i data-lucide="refresh-cw" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+
+          <div class="pomo-presets" id="preset-selector">
+             <!-- Preset buttons dynamically injected -->
+          </div>
+        </div>
+      </div>
+      <div id="stretch-banner" class="stretch-banner" style="display: none;">
+        <h3>NASM CPT 建議伸展: <span id="stretch-name"></span></h3>
+        <p id="stretch-desc"></p>
+      </div>
+      <div id="break-banner" class="stretch-banner" style="display: none; border-left-color: var(--accent-color); background: rgba(140, 122, 107, 0.15);">
+        <h3 style="color: var(--accent-color);">現正休息中</h3>
+        <p>所有任務已自動暫停計時</p>
+      </div>
+    </div>
+
+    <main class="app-main">
+      <!-- TaskList Component -->
+      <div class="task-list-section">
+        <div class="task-header">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <h2>待辦事項</h2>
+            <span id="task-count" class="task-count">0 / 0</span>
+          </div>
+          <div class="task-header-actions">
+            <div class="view-toggles">
+              <button id="view-list-btn" class="toggle-btn active" title="列表檢視">
+                <i data-lucide="layout-list"></i>
+              </button>
+              <button id="view-matrix-btn" class="toggle-btn" title="艾森豪矩陣檢視">
+                <i data-lucide="grid"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <form id="add-task-form" class="add-task-form">
+          <div class="add-task-inputs">
+            <input type="text" id="new-task-title" placeholder="新增任務..." class="main-input" />
+            <div class="add-task-extras">
+              <input type="date" id="new-task-date" class="date-input" title="到期日" />
+              <div class="checkbox-group">
+                <label class="custom-checkbox important-checkbox">
+                  <input type="checkbox" id="new-task-important" />
+                  <span class="checkmark important-check"></span>
+                  重要
+                </label>
+                <label class="custom-checkbox urgent-checkbox">
+                  <input type="checkbox" id="new-task-urgent" />
+                  <span class="checkmark urgent-check"></span>
+                  緊急
+                </label>
+              </div>
+            </div>
+          </div>
+          <button type="submit" id="add-btn" class="add-btn" disabled>
+            <i data-lucide="plus"></i> <span style="margin-left: 0.5rem; font-size: 0.9rem;">新增</span>
+          </button>
+        </form>
+
+        <div class="task-view-container">
+          <div id="task-list-view" class="task-list">
+            <!-- Task items injected here -->
+          </div>
+          <div id="task-matrix-view" class="matrix-container" style="display: none;">
+            <div class="matrix-quadrant q1">
+              <h3 class="quadrant-title alert-red">🔥 重要且緊急</h3>
+              <div id="q1-tasks" class="quadrant-tasks"></div>
+            </div>
+            <div class="matrix-quadrant q2">
+              <h3 class="quadrant-title alert-blue">⭐ 重要但不緊急</h3>
+              <div id="q2-tasks" class="quadrant-tasks"></div>
+            </div>
+            <div class="matrix-quadrant q3">
+              <h3 class="quadrant-title alert-orange">⏰ 不重要但緊急</h3>
+              <div id="q3-tasks" class="quadrant-tasks"></div>
+            </div>
+            <div class="matrix-quadrant q4">
+              <h3 class="quadrant-title alert-gray">🍵 不重要且不緊急</h3>
+              <div id="q4-tasks" class="quadrant-tasks"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
 </body>
 </html>
