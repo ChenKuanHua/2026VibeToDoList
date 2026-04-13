@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 
 <body data-theme="light">
@@ -117,10 +118,23 @@
               </div>
             </div>
           </div>
-          <button type="submit" id="add-btn" class="add-btn" disabled>
+          <button type="submit" id="add-btn" class="add-btn">
             <i data-lucide="plus"></i> <span style="margin-left: 0.5rem; font-size: 0.9rem;">新增</span>
           </button>
         </form>
+
+        <!-- Filter and Sort Bar -->
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-btn active" data-filter="active">執行中</button>
+            <button class="filter-btn" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="completed">已完成</button>
+          </div>
+          <button id="sort-toggle-btn" class="sort-toggle-btn" title="切換排序模式">
+            <i data-lucide="sparkles"></i>
+            <span id="sort-mode-text">智慧排序</span>
+          </button>
+        </div>
 
         <div class="task-view-container">
           <div id="task-list-view" class="task-list">
@@ -182,7 +196,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=5"></script>
 </body>
 
 </html>
