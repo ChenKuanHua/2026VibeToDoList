@@ -220,10 +220,18 @@ function renderTaskItem(task, isMatrix = false) {
                     <input type="text" class="task-edit-input" id="edit-title-${task.id}" value="${task.title}">
                     <div class="task-edit-options">
                         <input type="date" class="date-input" id="edit-date-${task.id}" value="${task.dueDate}">
-                        <button class="save-btn" onclick="saveTaskEdit('${task.id}')">確定</button>
+                        <div class="task-edit-actions">
+                            <button class="save-btn" onclick="saveTaskEdit('${task.id}')">確定</button>
+                            <button class="cancel-btn" onclick="cancelTaskEdit()">取消</button>
+                        </div>
                     </div>
                 </div>
             </div>`;
+        // Auto focus input when editing
+        setTimeout(() => {
+            const input = document.getElementById(`edit-title-${task.id}`);
+            if (input) input.focus();
+        }, 0);
     } else {
         let badges = `<span id="time-badge-${task.id}" class="badge badge-plain">${formatDuration(task.timeElapsed)}</span>`;
         if (task.dueDate) badges += `<span class="badge badge-date"><i data-lucide="calendar" style="width:12px;height:12px;"></i> ${task.dueDate}</span>`;
@@ -245,9 +253,45 @@ function renderTaskItem(task, isMatrix = false) {
                 ${!task.completed ? `<button class="task-timer-btn ${task.isRunning ? 'stop' : 'start'}" onclick="toggleTaskTimer('${task.id}')"><i data-lucide="${task.isRunning ? 'square' : 'play'}"></i></button>` : ''}
                 <button class="task-delete-btn" onclick="removeTask('${task.id}')"><i data-lucide="trash-2"></i></button>
             </div>`;
+
+        // Desktop Double Click
+        const titleEl = div.querySelector('.task-title');
+        titleEl.addEventListener('dblclick', () => enterEditMode(task.id));
+
+        // Mobile Long Press
+        let touchTimer;
+        titleEl.addEventListener('touchstart', () => {
+            touchTimer = setTimeout(() => enterEditMode(task.id), 600);
+        }, { passive: true });
+        titleEl.addEventListener('touchend', () => clearTimeout(touchTimer));
+        titleEl.addEventListener('touchmove', () => clearTimeout(touchTimer));
     }
     return div;
 }
+
+function enterEditMode(id) {
+    editingTaskId = id;
+    render();
+}
+
+function cancelTaskEdit() {
+    editingTaskId = null;
+    render();
+}
+
+function saveTaskEdit(id) {
+    const titleVal = document.getElementById(`edit-title-${id}`).value.trim();
+    const dateVal = document.getElementById(`edit-date-${id}`).value;
+    if (!titleVal) return;
+    
+    tasks = tasks.map(t => t.id === id ? { ...t, title: titleVal, dueDate: dateVal } : t);
+    editingTaskId = null;
+    render();
+    saveAndSyncTasks();
+}
+
+window.saveTaskEdit = saveTaskEdit;
+window.cancelTaskEdit = cancelTaskEdit;
 
 window.toggleTaskComplete = toggleTaskComplete;
 window.toggleTaskTimer = toggleTaskTimer;
@@ -431,10 +475,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (token) google.accounts.oauth2.revoke(token.access_token, () => {});
                     isAuthenticated = false;
                     localStorage.removeItem('vibeGoogleLoggedIn');
+                    localStorage.removeItem('vibeUserEmail');
+                    sessionStorage.removeItem('vibeAccessToken');
                     updateAuthUI();
                     location.reload();
                 } else {
-                    if (tokenClient) tokenClient.requestAccessToken({prompt: 'consent'});
+                    if (tokenClient) tokenClient.requestAccessToken({prompt: 'select_account'});
                 }
             });
         }
@@ -562,13 +608,22 @@ async function fetchTasksFromSheet() {
 }
 
 let syncTimeout = null;
+let isSyncInProgress = false;
+let needsRetryAfterAuth = false;
+
 async function syncToGoogleSheets() {
     if (!userSpreadsheetId || !isAuthenticated) return;
+    if (isSyncInProgress) {
+        needsRetryAfterAuth = true;
+        return;
+    }
+    
     setSyncStatus('正在同步...', true);
 
     if (syncTimeout) clearTimeout(syncTimeout);
 
     syncTimeout = setTimeout(async () => {
+        isSyncInProgress = true;
         try {
             await gapi.client.sheets.spreadsheets.values.clear({
                 spreadsheetId: userSpreadsheetId,
@@ -588,14 +643,23 @@ async function syncToGoogleSheets() {
                 });
             }
             setSyncStatus('已同步');
+            isSyncInProgress = false;
+            if (needsRetryAfterAuth) {
+                needsRetryAfterAuth = false;
+                syncToGoogleSheets();
+            }
             setTimeout(() => { if (syncText && syncText.innerText === '已同步') setSyncStatus(''); }, 2000);
         } catch (e) {
             console.error('Update err', e);
+            isSyncInProgress = false;
             if (e.status === 401) {
-                // Token expired, try to refresh silently
+                // Token expired, try to refresh silently and set retry flag
+                needsRetryAfterAuth = true;
+                setSyncStatus('連線過期，重新授權中...', true);
                 tokenClient.requestAccessToken({ prompt: '' });
+            } else {
+                setSyncStatus('同步失敗');
             }
-            setSyncStatus('同步失敗');
         }
     }, 1500);
 }
@@ -618,29 +682,86 @@ function checkGoogleLibs(autoLogin) {
                     client_id: CLIENT_ID,
                     scope: SCOPES,
                     callback: async (resp) => {
-                        if (resp.error) throw resp;
+                        if (resp.error) {
+                            console.error('Auth response error', resp);
+                            return;
+                        }
+
+                        // Store token in sessionStorage for page refreshes
+                        const now = Date.now();
+                        const expiresAt = now + (resp.expires_in * 1000);
+                        sessionStorage.setItem('vibeAccessToken', JSON.stringify({
+                            token: resp.access_token,
+                            expiresAt: expiresAt
+                        }));
+
                         try {
                             const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                                 headers: { Authorization: `Bearer ${resp.access_token}` }
                             }).then(r => r.json());
                             currentUserName = userInfo.given_name || userInfo.name || 'User';
-                        } catch (e) { console.log(e); }
+                            
+                            // Store email for "hint" in silent auth
+                            if (userInfo.email) {
+                                localStorage.setItem('vibeUserEmail', userInfo.email);
+                            }
+                        } catch (e) { console.log('User info fetch error', e); }
 
                         isAuthenticated = true;
                         localStorage.setItem('vibeGoogleLoggedIn', 'true');
                         updateAuthUI();
-                        await initDataSync();
+                        
+                        if (userSpreadsheetId) {
+                            // If we already have a spreadsheet ID, just retry sync if needed
+                            if (needsRetryAfterAuth) {
+                                needsRetryAfterAuth = false;
+                                syncToGoogleSheets();
+                            }
+                        } else {
+                            await initDataSync();
+                        }
                     }
                 });
                 
+                // --- Silent Auth Login on Refresh ---
                 if (autoLogin) {
-                    tokenClient.requestAccessToken({ prompt: '' });
+                    // 1. Check if we have a valid token in sessionStorage first (Instant refresh)
+                    const cached = sessionStorage.getItem('vibeAccessToken');
+                    if (cached) {
+                        try {
+                            const { token, expiresAt } = JSON.parse(cached);
+                            // If token still valid for more than 5 minutes
+                            if (token && expiresAt > Date.now() + 300000) {
+                                gapi.client.setToken({ access_token: token });
+                                isAuthenticated = true;
+                                updateAuthUI();
+                                
+                                // Fetch user name if not already set (optionally)
+                                fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                }).then(r => r.json()).then(userInfo => {
+                                    currentUserName = userInfo.given_name || userInfo.name || 'User';
+                                    updateAuthUI();
+                                }).catch(e => console.log('Silent user info fetch error', e));
+
+                                if (!userSpreadsheetId) await initDataSync();
+                                return; // Successfully recovered session
+                            }
+                        } catch (e) { console.warn('Cached token parse error', e); }
+                    }
+
+                    // 2. If no valid cached token, try silent refresh with hint
+                    const userEmailHint = localStorage.getItem('vibeUserEmail');
+                    tokenClient.requestAccessToken({ 
+                        prompt: '', 
+                        hint: userEmailHint || ''
+                    });
                 }
             } catch (e) {
                 console.error('Error init GAPI', e);
             }
         });
-    } else setTimeout(() => checkGoogleLibs(autoLogin), 100);
+    } else setTimeout(() => checkGoogleLibs(autoLogin), 150);
 }
 
 window.changePresetObj = (l) => { const p = PRESETS.find(x=>x.label===l); if(p){ activePreset=p; resetPomo(); } };

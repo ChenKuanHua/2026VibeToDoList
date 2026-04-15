@@ -107,23 +107,34 @@ body {
   letter-spacing: -0.02em;
 }
 
-.theme-toggle {
-  background: var(--surface-color);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-}
-
 .theme-toggle:hover {
   color: var(--text-primary);
   transform: scale(1.05);
+}
+
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-greeting {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.auth-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
 }
 
 /* =========================================
@@ -369,6 +380,28 @@ body {
   .time-text {
     font-size: 1.75rem;
     /* smaller text */
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .header-left h1 {
+    font-size: 1.5rem;
+  }
+  
+  .user-greeting {
+    display: none !important; /* Hide greeting on very small screens to save space */
   }
 }
 
@@ -795,9 +828,43 @@ input {
   flex-wrap: wrap;
 }
 
+.task-edit-input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(212, 187, 163, 0.2);
+}
+
+.task-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .save-btn {
   background: var(--text-primary);
   color: var(--surface-color);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+}
+
+.cancel-btn:hover {
+  background: rgba(128, 128, 128, 0.1);
+  color: var(--text-primary);
+}
+
+.save-btn:hover {
+  filter: brightness(1.2);
+}
   border-radius: 6px;
   padding: 0.25rem 0.75rem;
   font-size: 0.8rem;
