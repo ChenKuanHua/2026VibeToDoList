@@ -1,36 +1,36 @@
 // --- Audio Context Settings (Ping Sound) ---
 const playPing = () => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.5);
-    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-  } catch (e) {
-    console.log('Audio not supported or blocked', e);
-  }
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.5);
+        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+        console.log('Audio not supported or blocked', e);
+    }
 };
 
 // --- Constants & Data ---
 const STRETCHES = [
-  { name: '上斜方肌伸展', description: '右手輕壓左側頭部向右傾斜，感受左側頸部伸展，維持30秒後換邊。能舒緩久坐肩頸僵硬。' },
-  { name: '胸大肌伸展', description: '找一面牆或門框，單手呈90度貼住，身體微轉向反方向。感受胸部前方拉展。' },
-  { name: '坐姿梨狀肌伸展', description: '坐在椅子上，將右腳踝放在左膝上方，腰挺直並微向前傾。舒緩臀部緊繃。' },
-  { name: '背部與闊背肌伸展', description: '雙手交扣向前推，背部向後拱起低頭，感受背部肌肉拉伸。' },
-  { name: '頸部輕度活動', description: '下巴微收，頭部緩慢向左右兩側旋轉，不要過度用力，放鬆頸椎壓力。' }
+    { name: '上斜方肌伸展', description: '右手輕壓左側頭部向右傾斜，感受左側頸部伸展，維持30秒後換邊。能舒緩久坐肩頸僵硬。' },
+    { name: '胸大肌伸展', description: '找一面牆或門框，單手呈90度貼住，身體微轉向反方向。感受胸部前方拉展。' },
+    { name: '坐姿梨狀肌伸展', description: '坐在椅子上，將右腳踝放在左膝上方，腰挺直並微向前傾。舒緩臀部緊繃。' },
+    { name: '背部與闊背肌伸展', description: '雙手交扣向前推，背部向後拱起低頭，感受背部肌肉拉伸。' },
+    { name: '頸部輕度活動', description: '下巴微收，頭部緩慢向左右兩側旋轉，不要過度用力，放鬆頸椎壓力。' }
 ];
 
 const PRESETS = [
-  { label: '經典 25/5', work: 25, break: 5 },
-  { label: '長時 50/10', work: 50, break: 10 },
-  { label: '短衝刺 15/3', work: 15, break: 3 }
+    { label: '經典 25/5', work: 25, break: 5 },
+    { label: '長時 50/10', work: 50, break: 10 },
+    { label: '短衝刺 1/1', work: 15, break: 3 }
 ];
 
 // --- Global State ---
@@ -45,6 +45,8 @@ let taskFilter = 'active';
 let sortMode = 'smart';
 let timerInterval = null;
 let lastTickTime = Date.now();
+let secondsSinceLastLocalSave = 0;
+let secondsSinceLastCloudSave = 0;
 let currentUserName = '';
 
 // --- DOM Elements (Placeholder) ---
@@ -66,12 +68,12 @@ let authBtn, userGreeting, syncBanner, syncText, syncIcon, sheetLinkBtn;
             }
         }
     } catch (e) { console.error('initTasks error', e); }
-    
-    tasks = [{ 
-        id: Date.now().toString(), 
-        title: '規劃今日工作', 
-        completed: false, 
-        timeElapsed: 0, 
+
+    tasks = [{
+        id: Date.now().toString(),
+        title: '規劃今日工作',
+        completed: false,
+        timeElapsed: 0,
         isRunning: false,
         dueDate: new Date().toISOString().split('T')[0],
         isImportant: true,
@@ -81,91 +83,120 @@ let authBtn, userGreeting, syncBanner, syncText, syncIcon, sheetLinkBtn;
 
 // --- Formatting Utils ---
 function formatTimeText(totalSeconds) {
-  const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-  const s = (totalSeconds % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
 }
 
 function formatDuration(totalSeconds) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
 }
 
 function isWithinThreeDays(dateStr) {
-  if (!dateStr) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const targetDate = new Date(dateStr);
-  targetDate.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)); 
-  return diffDays <= 3;
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+    return diffDays <= 3;
 }
 
 function checkIsUrgent(isUrgentState, dueDate) {
-  if (isUrgentState) return true;
-  if (dueDate && isWithinThreeDays(dueDate)) return true;
-  return false;
+    if (isUrgentState) return true;
+    if (dueDate && isWithinThreeDays(dueDate)) return true;
+    return false;
 }
 
 // --- Timer Logic ---
 function startTimerLoop() {
-  if (timerInterval) clearInterval(timerInterval);
-  lastTickTime = Date.now();
-  timerInterval = setInterval(() => {
-    const hasRunningTimer = pomoIsRunning || tasks.some(t => t.isRunning);
-    if (!hasRunningTimer) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      return;
+    if (timerInterval) clearInterval(timerInterval);
+    lastTickTime = Date.now();
+    console.log("Timer engine started.");
+    timerInterval = setInterval(() => {
+        const hasRunningTimer = pomoIsRunning || tasks.some(t => t.isRunning);
+        if (!hasRunningTimer) {
+            console.log("No running timers, stopping engine.");
+            clearInterval(timerInterval);
+            timerInterval = null;
+            return;
+        }
+        const now = Date.now();
+        const delta = Math.floor((now - lastTickTime) / 1000);
+        if (delta > 0) {
+            lastTickTime = now;
+            tick(delta);
+        }
+    }, 1000);
+}
+
+function checkAndResumeTimers() {
+    try {
+        const hasRunningTimer = pomoIsRunning || (Array.isArray(tasks) && tasks.some(t => !!t.isRunning));
+        if (hasRunningTimer && !timerInterval) {
+            console.log("Timer engine: Auto-resume triggered.");
+            startTimerLoop();
+        }
+    } catch (e) {
+        console.error("Timer engine resume check failed:", e);
     }
-    const now = Date.now();
-    const delta = Math.floor((now - lastTickTime) / 1000);
-    if (delta > 0) {
-      lastTickTime = now;
-      tick(delta);
-    }
-  }, 1000);
 }
 
 function tick(deltaSeconds) {
-  let timerEnded = false;
-  if (pomoIsRunning) {
-    pomoTimeLeft -= deltaSeconds;
-    if (pomoTimeLeft <= 0) timerEnded = true;
-  }
-  const isBreakActive = pomoMode === 'break' && pomoIsRunning;
-  if (!isBreakActive) {
-    tasks.forEach(t => { if (t.isRunning) t.timeElapsed += deltaSeconds; });
-  }
-  if (timerEnded) {
-    playPing();
-    handlePomoComplete();
-    render();
-  } else {
-    updateTimesOnly();
-  }
+    let timerEnded = false;
+    if (pomoIsRunning) {
+        pomoTimeLeft -= deltaSeconds;
+        if (pomoTimeLeft <= 0) timerEnded = true;
+    }
+    const isBreakActive = pomoMode === 'break' && pomoIsRunning;
+    if (!isBreakActive) {
+        tasks.forEach(t => { if (t.isRunning) t.timeElapsed += deltaSeconds; });
+    }
+
+    // Periodic Local Save (Every 10 seconds)
+    secondsSinceLastLocalSave += deltaSeconds;
+    if (secondsSinceLastLocalSave >= 30) {
+        saveTasksLocallyOnly();
+        secondsSinceLastLocalSave = 0;
+    }
+
+    // Periodic Cloud Save (Every 60 seconds)
+    secondsSinceLastCloudSave += deltaSeconds;
+    if (secondsSinceLastCloudSave >= 60) {
+        saveAndSyncTasks();
+        secondsSinceLastCloudSave = 0;
+    }
+
+    if (timerEnded) {
+        playPing();
+        handlePomoComplete();
+        render();
+    } else {
+        updateTimesOnly();
+    }
 }
 
 function handlePomoComplete() {
-  if (pomoMode === 'work') {
-    pomoMode = 'break';
-    pomoTimeLeft = activePreset.break * 60;
-    currentStretch = STRETCHES[Math.floor(Math.random() * STRETCHES.length)];
-  } else {
-    pomoMode = 'work';
-    pomoTimeLeft = activePreset.work * 60;
-    pomoIsRunning = false;
-    currentStretch = null;
-  }
-  saveAndSyncTasks();
+    if (pomoMode === 'work') {
+        pomoMode = 'break';
+        pomoTimeLeft = activePreset.break * 60;
+        currentStretch = STRETCHES[Math.floor(Math.random() * STRETCHES.length)];
+    } else {
+        pomoMode = 'work';
+        pomoTimeLeft = activePreset.work * 60;
+        pomoIsRunning = false;
+        currentStretch = null;
+    }
+    saveAndSyncTasks();
 }
 
 const togglePomo = () => {
-    try { new (window.AudioContext || window.webkitAudioContext)().resume(); } catch(e){}
+    try { new (window.AudioContext || window.webkitAudioContext)().resume(); } catch (e) { }
     pomoIsRunning = !pomoIsRunning;
     if (pomoIsRunning && !timerInterval) startTimerLoop();
     render();
@@ -195,7 +226,7 @@ function addTask() {
     newTaskDate.value = '';
     newTaskImportant.checked = false;
     newTaskUrgent.checked = false;
-    
+
     render();
     saveAndSyncTasks();
 }
@@ -283,7 +314,7 @@ function saveTaskEdit(id) {
     const titleVal = document.getElementById(`edit-title-${id}`).value.trim();
     const dateVal = document.getElementById(`edit-date-${id}`).value;
     if (!titleVal) return;
-    
+
     tasks = tasks.map(t => t.id === id ? { ...t, title: titleVal, dueDate: dateVal } : t);
     editingTaskId = null;
     render();
@@ -312,10 +343,18 @@ function updateTimesOnly() {
 
 function render() {
     if (!pomodoroBar) return;
+
+    // Proactively check and resume timers at the start of every render
+    checkAndResumeTimers();
+
     const isBreak = pomoMode === 'break';
+    const isBreakActive = isBreak && pomoIsRunning;
+
+    document.body.classList.toggle('is-break-active', isBreakActive);
+
     pomodoroBar.className = `pomodoro-bar ${isBreak ? 'is-break' : ''}`;
     pomoTitle.innerText = isBreak ? '休息時間' : '專注時間';
-    
+
     presetSelector.innerHTML = PRESETS.map(p => `
         <button class="preset-btn ${activePreset.label === p.label ? 'active' : ''}" onclick="window.changePresetObj('${p.label}')">${p.label}</button>
     `).join('');
@@ -371,7 +410,8 @@ function render() {
             initSortable(el, 'matrix');
         });
     }
-    lucide.createIcons();
+    // lucide.createIcons is called at the end to avoid blocking core logic
+    try { lucide.createIcons(); } catch (e) { }
 }
 
 // --- Sortable ---
@@ -392,8 +432,8 @@ function initSortable(el, type) {
             // Reorder the main tasks array based on DOM order
             const ids = Array.from(document.querySelectorAll('.task-item')).map(node => node.dataset.id);
             const newTasks = [];
-            ids.forEach(id => { const t = tasks.find(x => x.id === id); if(t && !newTasks.includes(t)) newTasks.push(t); });
-            tasks.forEach(t => { if(!newTasks.includes(t)) newTasks.push(t); });
+            ids.forEach(id => { const t = tasks.find(x => x.id === id); if (t && !newTasks.includes(t)) newTasks.push(t); });
+            tasks.forEach(t => { if (!newTasks.includes(t)) newTasks.push(t); });
             tasks = newTasks;
             saveAndSyncTasks();
             render();
@@ -444,7 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (viewMatrixBtn) viewMatrixBtn.addEventListener('click', () => { viewMode = 'matrix'; render(); });
         if (safeGet('sort-toggle-btn')) safeGet('sort-toggle-btn').addEventListener('click', () => { sortMode = sortMode === 'smart' ? 'manual' : 'smart'; render(); });
         document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => { taskFilter = btn.dataset.filter; render(); }));
-        
+
         const infoBtn = safeGet('info-modal-btn');
         const modal = safeGet('info-modal');
         if (infoBtn && modal) {
@@ -456,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const themeBtn = safeGet('theme-toggle');
         let theme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-theme', theme);
-        if(themeBtn) {
+        if (themeBtn) {
             themeBtn.innerHTML = `<i data-lucide="${theme === 'light' ? 'moon' : 'sun'}"></i>`;
             themeBtn.addEventListener('click', () => {
                 theme = theme === 'light' ? 'dark' : 'light';
@@ -472,7 +512,7 @@ document.addEventListener("DOMContentLoaded", () => {
             authBtn.addEventListener('click', () => {
                 if (isAuthenticated) {
                     const token = gapi.client.getToken();
-                    if (token) google.accounts.oauth2.revoke(token.access_token, () => {});
+                    if (token) google.accounts.oauth2.revoke(token.access_token, () => { });
                     isAuthenticated = false;
                     localStorage.removeItem('vibeGoogleLoggedIn');
                     localStorage.removeItem('vibeUserEmail');
@@ -480,23 +520,29 @@ document.addEventListener("DOMContentLoaded", () => {
                     updateAuthUI();
                     location.reload();
                 } else {
-                    if (tokenClient) tokenClient.requestAccessToken({prompt: 'select_account'});
+                    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'select_account' });
                 }
             });
         }
 
         render();
+        checkAndResumeTimers();
         checkGoogleLibs(localStorage.getItem('vibeGoogleLoggedIn') === 'true');
         lucide.createIcons();
-    } catch(err) { console.error("Init failed:", err); }
+
+        // Force save on page unload/refresh
+        window.addEventListener('beforeunload', () => {
+            saveAndSyncTasks();
+        });
+    } catch (err) { console.error("Init failed:", err); }
 });
 
 // --- Google Sheets Integration ---
 const CLIENT_ID = '669986671313-2rtplhamuknheg6etvq8iot92s5kkm3k.apps.googleusercontent.com';
 const API_KEY = 'AIzaSyCTGJJuUlOY-fCWngXnGTjoqqmPiCCCgfU';
 const DISCOVERY_DOCS = [
-  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-  'https://sheets.googleapis.com/$discovery/rest?version=v4'
+    'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+    'https://sheets.googleapis.com/$discovery/rest?version=v4'
 ];
 const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
 
@@ -589,7 +635,7 @@ async function fetchTasksFromSheet() {
         const rows = response.result.values || [];
 
         if (rows.length > 0) {
-            tasks = rows.map(row => ({
+            const incomingTasks = rows.map(row => ({
                 id: row[0] || Date.now().toString() + Math.random(),
                 title: row[1] || '未命名任務',
                 completed: row[2] === 'TRUE',
@@ -599,7 +645,22 @@ async function fetchTasksFromSheet() {
                 isUrgent: row[6] === 'TRUE',
                 isRunning: false
             }));
-            localStorage.setItem('vibeTasks', JSON.stringify(tasks));
+
+            // Smart Merge: If local task is running or has more time, keep local time
+            tasks = incomingTasks.map(incoming => {
+                const local = tasks.find(t => t.id === incoming.id);
+                if (local) {
+                    return {
+                        ...incoming,
+                        // Priority: Keep local time if it's currently running or larger (unsynced work)
+                        timeElapsed: (local.isRunning || local.timeElapsed > incoming.timeElapsed) ? local.timeElapsed : incoming.timeElapsed,
+                        isRunning: local.isRunning // Preserve running state
+                    };
+                }
+                return incoming;
+            });
+
+            saveAndSyncTasks(); // Sync back merged data (with preserved local times) to cloud
         }
         render();
     } catch (err) {
@@ -617,7 +678,7 @@ async function syncToGoogleSheets() {
         needsRetryAfterAuth = true;
         return;
     }
-    
+
     setSyncStatus('正在同步...', true);
 
     if (syncTimeout) clearTimeout(syncTimeout);
@@ -664,6 +725,27 @@ async function syncToGoogleSheets() {
     }, 1500);
 }
 
+function saveTasksLocallyOnly() {
+    localStorage.setItem('vibeTasks', JSON.stringify(tasks));
+    showAutoSaveIndicator();
+}
+
+function showAutoSaveIndicator() {
+    const syncText = safeGet('sync-status-text');
+    const syncBanner = safeGet('sync-status-banner');
+    if (syncBanner && syncText && syncBanner.style.display === 'none') {
+        const originalText = syncText.innerText;
+        syncText.innerText = '已自動存檔至本地';
+        syncBanner.style.display = 'flex';
+        syncBanner.classList.add('auto-save-flash');
+        setTimeout(() => {
+            syncBanner.style.display = 'none';
+            syncBanner.classList.remove('auto-save-flash');
+            syncText.innerText = originalText;
+        }, 2000);
+    }
+}
+
 function saveAndSyncTasks() {
     localStorage.setItem('vibeTasks', JSON.stringify(tasks));
     if (isAuthenticated) {
@@ -677,7 +759,7 @@ function checkGoogleLibs(autoLogin) {
             try {
                 await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
                 gapiInited = true;
-                
+
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: SCOPES,
@@ -700,7 +782,7 @@ function checkGoogleLibs(autoLogin) {
                                 headers: { Authorization: `Bearer ${resp.access_token}` }
                             }).then(r => r.json());
                             currentUserName = userInfo.given_name || userInfo.name || 'User';
-                            
+
                             // Store email for "hint" in silent auth
                             if (userInfo.email) {
                                 localStorage.setItem('vibeUserEmail', userInfo.email);
@@ -710,7 +792,7 @@ function checkGoogleLibs(autoLogin) {
                         isAuthenticated = true;
                         localStorage.setItem('vibeGoogleLoggedIn', 'true');
                         updateAuthUI();
-                        
+
                         if (userSpreadsheetId) {
                             // If we already have a spreadsheet ID, just retry sync if needed
                             if (needsRetryAfterAuth) {
@@ -722,7 +804,7 @@ function checkGoogleLibs(autoLogin) {
                         }
                     }
                 });
-                
+
                 // --- Silent Auth Login on Refresh ---
                 if (autoLogin) {
                     // 1. Check if we have a valid token in sessionStorage first (Instant refresh)
@@ -735,7 +817,7 @@ function checkGoogleLibs(autoLogin) {
                                 gapi.client.setToken({ access_token: token });
                                 isAuthenticated = true;
                                 updateAuthUI();
-                                
+
                                 // Fetch user name if not already set (optionally)
                                 fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                                     headers: { Authorization: `Bearer ${token}` }
@@ -752,8 +834,8 @@ function checkGoogleLibs(autoLogin) {
 
                     // 2. If no valid cached token, try silent refresh with hint
                     const userEmailHint = localStorage.getItem('vibeUserEmail');
-                    tokenClient.requestAccessToken({ 
-                        prompt: '', 
+                    tokenClient.requestAccessToken({
+                        prompt: '',
                         hint: userEmailHint || ''
                     });
                 }
@@ -764,4 +846,4 @@ function checkGoogleLibs(autoLogin) {
     } else setTimeout(() => checkGoogleLibs(autoLogin), 150);
 }
 
-window.changePresetObj = (l) => { const p = PRESETS.find(x=>x.label===l); if(p){ activePreset=p; resetPomo(); } };
+window.changePresetObj = (l) => { const p = PRESETS.find(x => x.label === l); if (p) { activePreset = p; resetPomo(); } };
