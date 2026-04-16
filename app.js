@@ -30,7 +30,7 @@ const STRETCHES = [
 const PRESETS = [
     { label: '經典 25/5', work: 25, break: 5 },
     { label: '長時 50/10', work: 50, break: 10 },
-    { label: '短衝刺 1/1', work: 15, break: 3 }
+    { label: '短衝刺 15/3', work: 15, break: 3 }
 ];
 
 // --- Global State ---
@@ -392,11 +392,14 @@ function render() {
     if (viewMode === 'list') {
         taskListView.style.display = 'flex';
         taskMatrixView.style.display = 'none';
+        // 僅清除四個象限內的任務，保留象限標題與結構
+        [q1Tasks, q2Tasks, q3Tasks, q4Tasks].forEach(el => { if (el) el.innerHTML = ''; });
         taskListView.innerHTML = '';
         displayTasks.forEach(t => taskListView.appendChild(renderTaskItem(t, false)));
         initSortable(taskListView, 'list');
     } else {
         taskListView.style.display = 'none';
+        taskListView.innerHTML = ''; // 清除列表視圖內容，防止 ID 重複
         taskMatrixView.style.display = 'grid';
         const qs = [
             displayTasks.filter(t => t.isImportant && checkIsUrgent(t.isUrgent, t.dueDate)),
@@ -516,7 +519,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     isAuthenticated = false;
                     localStorage.removeItem('vibeGoogleLoggedIn');
                     localStorage.removeItem('vibeUserEmail');
-                    sessionStorage.removeItem('vibeAccessToken');
+                    localStorage.removeItem('vibeAccessToken'); // 從 localStorage 移除
+                    localStorage.removeItem('vibeTasks'); // 登出後清除使用者資料暂存，確保隱私
                     updateAuthUI();
                     location.reload();
                 } else {
@@ -564,14 +568,24 @@ function setSyncStatus(status, isLoading = false) {
 
 function updateAuthUI() {
     if (!authBtn) return;
+    const isAutoLoggingIn = localStorage.getItem('vibeGoogleLoggedIn') === 'true' && !isAuthenticated;
+
     if (isAuthenticated) {
         authBtn.innerHTML = '<i data-lucide="log-out" style="width:16px;height:16px;"></i> 登出';
         authBtn.classList.add('auth-logout');
+        authBtn.classList.remove('logging-in');
         userGreeting.innerHTML = `嗨! ${currentUserName}`;
         userGreeting.style.display = 'block';
+    } else if (isAutoLoggingIn) {
+        authBtn.innerHTML = '<i data-lucide="loader-2" class="spin-icon"></i> 連線中...';
+        authBtn.classList.add('logging-in');
+        userGreeting.style.display = 'none';
+        if (syncBanner) syncBanner.style.display = 'none';
+        if (sheetLinkBtn) sheetLinkBtn.style.display = 'none';
     } else {
         authBtn.innerHTML = 'Google 登入';
         authBtn.classList.remove('auth-logout');
+        authBtn.classList.remove('logging-in');
         userGreeting.style.display = 'none';
         if (syncBanner) syncBanner.style.display = 'none';
         if (sheetLinkBtn) sheetLinkBtn.style.display = 'none';
@@ -581,7 +595,7 @@ function updateAuthUI() {
 }
 
 async function initDataSync() {
-    setSyncStatus('正在為您尋找/建構 Google 試算表...', true);
+    setSyncStatus('尋找雲端資料...', true);
     try {
         let response = await gapi.client.drive.files.list({
             q: "name='VibeToDoList' and trashed=false",
@@ -593,7 +607,7 @@ async function initDataSync() {
         if (files && files.length > 0) {
             userSpreadsheetId = files[0].id;
         } else {
-            setSyncStatus('建立新的試算表中...', true);
+            setSyncStatus('建立檔案中...', true);
             const createResponse = await gapi.client.sheets.spreadsheets.create({
                 resource: {
                     properties: { title: 'VibeToDoList' },
@@ -610,9 +624,9 @@ async function initDataSync() {
             });
         }
 
-        setSyncStatus('正在同步您的待辦事項...', true);
+        setSyncStatus('同步中...', true);
         await fetchTasksFromSheet();
-        setSyncStatus('已連接至您的 VibeToDoList 試算表囉!');
+        setSyncStatus('雲端已連線');
         if (sheetLinkBtn) {
             sheetLinkBtn.href = `https://docs.google.com/spreadsheets/d/${userSpreadsheetId}/edit`;
             sheetLinkBtn.style.display = 'inline-flex';
@@ -769,10 +783,10 @@ function checkGoogleLibs(autoLogin) {
                             return;
                         }
 
-                        // Store token in sessionStorage for page refreshes
+                        // Store token in localStorage for long-term persistence across sessions
                         const now = Date.now();
                         const expiresAt = now + (resp.expires_in * 1000);
-                        sessionStorage.setItem('vibeAccessToken', JSON.stringify({
+                        localStorage.setItem('vibeAccessToken', JSON.stringify({
                             token: resp.access_token,
                             expiresAt: expiresAt
                         }));
@@ -807,8 +821,10 @@ function checkGoogleLibs(autoLogin) {
 
                 // --- Silent Auth Login on Refresh ---
                 if (autoLogin) {
-                    // 1. Check if we have a valid token in sessionStorage first (Instant refresh)
-                    const cached = sessionStorage.getItem('vibeAccessToken');
+                    updateAuthUI(); // 顯示「連線中...」
+
+                    // 1. Check if we have a valid token in localStorage first (Across session persistence)
+                    const cached = localStorage.getItem('vibeAccessToken');
                     if (cached) {
                         try {
                             const { token, expiresAt } = JSON.parse(cached);

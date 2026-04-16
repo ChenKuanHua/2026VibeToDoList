@@ -24,6 +24,10 @@
         <div>
           <h1>VibeFlows</h1>
         </div>
+        <div id="sync-status-banner" class="sync-status-banner" style="display: none;">
+          <i data-lucide="loader-2" class="spin-icon" id="sync-status-icon"></i>
+          <span id="sync-status-text">正在同步...</span>
+        </div>
         <button id="info-modal-btn" class="info-btn" title="使用指南與隱私說明">
           <i data-lucide="info"></i>
         </button>
@@ -31,6 +35,9 @@
       <div class="header-right">
         <div id="auth-section" class="auth-section">
           <div id="user-greeting" class="user-greeting" style="display:none;"></div>
+          <a href="#" id="sheet-link" target="_blank" class="sheet-link-btn" style="display:none;" title="開啟您的試算表">
+            <i data-lucide="table" style="width:16px;height:16px;"></i>
+          </a>
           <button id="auth-btn" class="auth-btn auth-login">Google 登入</button>
         </div>
         <button id="theme-toggle" class="theme-toggle" title="切換深淺模式">
@@ -38,13 +45,6 @@
         </button>
       </div>
     </header>
-
-    <div id="sync-status-banner" class="sync-status-banner" style="display: none;">
-      <i data-lucide="loader-2" class="spin-icon" id="sync-status-icon"></i>
-      <span id="sync-status-text">正在同步...</span>
-      <a href="#" id="sheet-link" target="_blank" class="sheet-link-btn" style="display:none;" title="開啟您的試算表"><i
-          data-lucide="external-link" style="width:14px;height:14px;"></i></a>
-    </div>
 
     <div class="sticky-pomodoro-wrapper">
       <div id="pomodoro-bar" class="pomodoro-bar">
